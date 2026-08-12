@@ -340,11 +340,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor > 0 {
 				m.cursor--
 			}
+			m.viewport.ScrollUp()
 		// Move cursor down
 		case key.Matches(msg, m.keymap.Down):
 			if m.cursor < len(m.items)-1 {
 				m.cursor++
 			}
+			m.viewport.ScrollDown()
 		// Toggle selection
 		case key.Matches(msg, m.keymap.Space):
 			m.selected[m.cursor] = !m.selected[m.cursor]
@@ -370,7 +372,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		// If the window resizes, update viewport size
 		m.viewport.Width = msg.Width
-		m.viewport.Height = msg.Height
+		m.viewport.Height = msg.Height - 4
 	}
 
 	return m, nil
@@ -383,7 +385,8 @@ func (m model) View() string {
 		return ""
 	}
 
-	s := m.label + "\n"
+	var sb strings.Builder
+	sb.WriteString(m.label + "\n")
 
 	for i, choice := range m.items {
 		cursor := " " // no cursor
@@ -397,10 +400,13 @@ func (m model) View() string {
 		}
 
 		// [ ] or [x], plus cursor arrow, plus the course name
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
+		sb.WriteString(fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice))
 	}
-	s += "\n(↑/↓ or k/j to navigate, space to toggle, enter to confirm, q to quit)\n(*/→ to select all, ←/0 to select none)"
-	return s
+
+	m.viewport.SetContent(sb.String())
+
+	footer := "\n(↑/↓ or k/j to navigate, space to toggle, enter to confirm, q to quit)\n(*/→ to select all, ←/0 to select none)"
+	return m.viewport.View() + footer
 }
 
 // selectedItems returns the items that the user marked as selected
